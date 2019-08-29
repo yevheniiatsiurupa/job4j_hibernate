@@ -7,6 +7,7 @@ import org.hibernate.cfg.Configuration;
 import ru.job4j.hiber.models.Item;
 
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Класс для работы с базой данных.
@@ -24,6 +25,26 @@ public class DbStore {
     public static DbStore getInstance() {
         return INSTANCE;
     }
+
+    private <T> T tx(final Function<Session, T> command) {
+        final Session session = factory.openSession();
+        Transaction tr = null;
+        try {
+            tr = session.beginTransaction();
+            T rsl = command.apply(session);
+            tr.commit();
+            return rsl;
+        } catch (Exception e) {
+            if (tr != null) {
+                tr.rollback();
+                e.printStackTrace();
+            }
+        } finally {
+            session.close();
+        }
+        return null;
+    }
+
 
     /**
      * Метод для добавления / редактирования задания.
@@ -50,43 +71,13 @@ public class DbStore {
      * Метод возвращает список всех заданий в БД.
      */
     public List findAll() {
-        Session session = factory.openSession();
-        List items = null;
-        Transaction tr = null;
-        try {
-            tr = session.beginTransaction();
-            items = session.createQuery("from Item").list();
-            tr.commit();
-        } catch (Exception e) {
-            if (tr != null) {
-                tr.rollback();
-                e.printStackTrace();
-            }
-        } finally {
-            session.close();
-        }
-        return items;
+        return this.tx(session -> session.createQuery("from Item").list());
     }
 
     /**
      * Метод возвращает список невыполненных заданий из БД.
      */
     public List findFiltered() {
-        Session session = factory.openSession();
-        List items = null;
-        Transaction tr = null;
-        try {
-            tr = session.beginTransaction();
-            items = session.createQuery("from Item where done = false").list();
-            tr.commit();
-        } catch (Exception e) {
-            if (tr != null) {
-                tr.rollback();
-                e.printStackTrace();
-            }
-        } finally {
-            session.close();
-        }
-        return items;
+        return this.tx(session -> session.createQuery("from Item where done = false").list());
     }
 }
