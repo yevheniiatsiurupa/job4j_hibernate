@@ -7,6 +7,7 @@ import org.hibernate.cfg.Configuration;
 import ru.job4j.hiber.models.Item;
 
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -45,17 +46,12 @@ public class DbStore {
         return null;
     }
 
-
-    /**
-     * Метод для добавления / редактирования задания.
-     * @param item задание.
-     */
-    public void addOrUpdateItem(Item item) {
-        Session session = factory.openSession();
+    private void doVoid(final Consumer<Session> command) {
+        final Session session = factory.openSession();
         Transaction tr = null;
         try {
             tr = session.beginTransaction();
-            session.saveOrUpdate(item);
+            command.accept(session);
             tr.commit();
         } catch (Exception e) {
             if (tr != null) {
@@ -65,6 +61,15 @@ public class DbStore {
         } finally {
             session.close();
         }
+    }
+
+
+    /**
+     * Метод для добавления / редактирования задания.
+     * @param item задание.
+     */
+    public void addOrUpdateItem(Item item) {
+        this.doVoid(session -> session.saveOrUpdate(item));
     }
 
     /**
