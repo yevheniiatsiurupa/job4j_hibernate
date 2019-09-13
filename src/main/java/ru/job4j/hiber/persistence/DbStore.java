@@ -24,7 +24,7 @@ public class DbStore {
     }
 
     public static DbStore getInstance() {
-        return INSTANCE;
+        return Holder.INSTANCE;
     }
 
     private <T> T tx(final Function<Session, T> command) {
@@ -84,5 +84,9 @@ public class DbStore {
      */
     public List findFiltered() {
         return this.tx(session -> session.createQuery("from Item where done = false").list());
+    }
+
+    private static final class Holder{
+        private static final DbStore INSTANCE = new DbStore();
     }
 }
